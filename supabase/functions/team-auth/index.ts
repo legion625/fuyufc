@@ -214,6 +214,34 @@ Deno.serve(async (req: Request) => {
       const { error: mErr } = await supabase
         .from("matches").update({ team_id: teamId }).eq("tournament_id", tournamentId);
       if (mErr) return json({ ok: false, error: "更新比賽紀錄失敗：" + mErr.message }, 500);
+
+      // Clean up attendance records for players who:
+      //  - did not attend (attended = false), AND
+      //  - have no membership (active or inactive) with the new team
+      const { data: newTeamMems } = await supabase
+        .from("player_team_memberships")
+        .select("player_id")
+        .eq("team_id", teamId);
+      const newTeamPlayerIds = (newTeamMems ?? []).map((m) => m.player_id);
+      let attErr: { message: string } | null = null;
+      if (newTeamPlayerIds.length > 0) {
+        const r = await supabase
+          .from("tournament_attendances")
+          .delete()
+          .eq("tournament_id", tournamentId)
+          .eq("attended", false)
+          .not("player_id", "in", `(${newTeamPlayerIds.join(",")})`);
+        attErr = r.error;
+      } else {
+        const r = await supabase
+          .from("tournament_attendances")
+          .delete()
+          .eq("tournament_id", tournamentId)
+          .eq("attended", false);
+        attErr = r.error;
+      }
+      if (attErr) return json({ ok: false, error: "清理出席紀錄失敗：" + attErr.message }, 500);
+
       return json({ ok: true });
     }
 

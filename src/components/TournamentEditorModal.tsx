@@ -322,6 +322,10 @@ export function TournamentEditorModal({
           <div className="space-y-2">
             {displayPlayers.map((p) => {
               const isFormer = !teamPlayerIds.has(p.id);
+              const hasMembershipWithTeam = p.memberships?.some(
+                (m) => m.team_id === tournament.team_id
+              ) ?? false;
+              const formerLabel = hasMembershipWithTeam ? '已離隊' : '未加入';
               const a = atts[p.id];
               const on = a?.attended;
               return (
@@ -342,7 +346,7 @@ export function TournamentEditorModal({
                       />
                       {isFormer && (
                         <span className="text-[10px] text-amber-400/80 font-medium shrink-0">
-                          已離隊
+                          {formerLabel}
                         </span>
                       )}
                     </div>
@@ -461,7 +465,7 @@ export function TournamentEditorModal({
                 </button>
                 {newTeamId !== tournament.team_id && !tournament.frozen && (
                   <p className="text-[11px] text-amber-400/80">
-                    盃賽及其所有比賽紀錄將移轉至所選球隊，出席紀錄保持不變。
+                    盃賽及其所有比賽紀錄將移轉至所選球隊。未出席且不屬於新球隊的球員，其出席紀錄將被清除。
                   </p>
                 )}
               </div>

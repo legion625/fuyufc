@@ -142,7 +142,7 @@ export function TournamentsView({
               類型
             </label>
             <div className="flex gap-2">
-              {(['cup', 'league', 'friendly'] as CompetitionType[]).map((ty) => {
+              {(['cup', 'league'] as CompetitionType[]).map((ty) => {
                 const TIcon = TYPE_ICONS[ty];
                 return (
                   <button

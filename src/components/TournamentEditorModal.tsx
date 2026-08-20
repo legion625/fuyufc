@@ -240,7 +240,7 @@ export function TournamentEditorModal({
               類型
             </label>
             <div className="flex gap-2">
-              {(['cup', 'league', 'friendly'] as CompetitionType[]).map((ty) => (
+              {(['cup', 'league'] as CompetitionType[]).map((ty) => (
                 <button
                   key={ty}
                   onClick={() => setCompType(ty)}

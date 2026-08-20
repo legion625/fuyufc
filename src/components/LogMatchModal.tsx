@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Check, Loader2, Minus, Plus, X, Footprints } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import type { Player, Tournament } from '@/lib/types';
-import { STAGES as STAGE_LIST, stageLabel } from '@/lib/types';
+import type { Player, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
+import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS } from '@/lib/types';
+import { Sun, Cloud, CloudRain, CloudDrizzle } from 'lucide-react';
 import { PlayerName } from '@/components/PlayerName';
 
 type Perf = {
@@ -16,15 +17,18 @@ export function LogMatchModal({
   tournament,
   players,
   teamId,
+  teams,
   onClose,
   onSaved,
 }: {
   tournament: Tournament;
   players: Player[];
   teamId: string | null;
+  teams: Team[];
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const team = teams.find((t) => t.id === teamId);
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(
     tournament.start_date ?? today
@@ -36,6 +40,8 @@ export function LogMatchModal({
   const [pkOur, setPkOur] = useState<number | null>(null);
   const [pkOpp, setPkOpp] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
+  const [kit, setKit] = useState<KitChoice>('home');
+  const [weather, setWeather] = useState<WeatherChoice | null>(null);
   const [perfs, setPerfs] = useState<Record<string, Perf>>(() => {
     const init: Record<string, Perf> = {};
     for (const p of players)
@@ -109,6 +115,8 @@ export function LogMatchModal({
           pk_our: ourScore === oppScore ? pkOur : null,
           pk_opp: ourScore === oppScore ? pkOpp : null,
           notes: notes.trim(),
+          kit,
+          weather,
           team_id: teamId,
         })
         .select()
@@ -145,6 +153,8 @@ export function LogMatchModal({
 
       setSaving(false);
       setMsg({ ok: true, text: '比賽結果已登錄！' });
+      setKit('home');
+      setWeather(null);
       onSaved();
       onClose();
     } catch (e) {
@@ -290,6 +300,66 @@ export function LogMatchModal({
             </div>
           </div>
 
+          <div className="px-5 pb-5 pt-1 space-y-4">
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">球衣</label>
+              <div className="flex gap-2">
+                {(['home', 'away'] as KitChoice[]).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setKit(k)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                      kit === k
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                        : 'bg-slate-900 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full border border-slate-500/40"
+                      style={{ backgroundColor: k === 'home' ? team?.home_kit_color : team?.away_kit_color }}
+                    />
+                    {KIT_LABELS[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">天氣</label>
+              <div className="flex gap-2">
+                {(['sunny', 'cloudy', 'overcast', 'rainy'] as WeatherChoice[]).map((w) => {
+                  const icons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
+                  const Icon = icons[w];
+                  return (
+                    <button
+                      key={w}
+                      onClick={() => setWeather(weather === w ? null : w)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
+                        weather === w
+                          ? 'bg-sky-500/15 border-sky-500/40 text-white'
+                          : 'bg-slate-900 border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <Icon size={14} />
+                      {WEATHER_LABELS[w]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                備註
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
+                rows={3}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
+              />
+            </div>
+          </div>
+
           <div className="px-5 pb-3">
             <div className="flex items-center gap-2 text-slate-300 text-sm font-semibold mb-0.5">
               <Footprints size={16} className="text-sky-400" /> 上場球員
@@ -377,19 +447,6 @@ export function LogMatchModal({
                 );
               })
             )}
-          </div>
-
-          <div className="px-5 pb-5 pt-1">
-            <label className="block text-slate-400 text-xs mb-1.5 font-medium">
-              備註
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
-              rows={3}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
-            />
           </div>
         </div>
 

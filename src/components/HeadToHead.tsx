@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Search, ChevronLeft, Swords, Filter } from 'lucide-react';
-import type { MatchWithPerformances, Tournament, Team } from '@/lib/types';
-import { getResult } from '@/lib/types';
+import { Search, ChevronLeft, Swords, Filter, Sun, Cloud, CloudRain, CloudDrizzle, Shirt } from 'lucide-react';
+import type { MatchWithPerformances, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
+import { getResult, WEATHER_LABELS } from '@/lib/types';
 import { MatchCard } from './MatchCard';
 
 type OpponentStat = {
@@ -25,11 +25,16 @@ export function HeadToHead({
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
+  const [kitFilter, setKitFilter] = useState<string>('all');
+  const [weatherFilter, setWeatherFilter] = useState<string>('all');
 
   const filteredMatches = useMemo(() => {
-    if (tournamentFilter === 'all') return matches;
-    return matches.filter((m) => m.tournament_id === tournamentFilter);
-  }, [matches, tournamentFilter]);
+    let result = matches;
+    if (tournamentFilter !== 'all') result = result.filter((m) => m.tournament_id === tournamentFilter);
+    if (kitFilter !== 'all') result = result.filter((m) => m.kit === kitFilter);
+    if (weatherFilter !== 'all') result = result.filter((m) => m.weather === weatherFilter);
+    return result;
+  }, [matches, tournamentFilter, kitFilter, weatherFilter]);
 
   const stats = useMemo(() => {
     const map = new Map<string, OpponentStat>();
@@ -149,6 +154,47 @@ export function HeadToHead({
         </div>
       )}
 
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+        <Shirt size={14} className="text-slate-500 shrink-0" />
+        <FilterChip
+          label="全部球衣"
+          active={kitFilter === 'all'}
+          onClick={() => setKitFilter('all')}
+        />
+        <FilterChip
+          label="主場"
+          active={kitFilter === 'home'}
+          onClick={() => setKitFilter('home')}
+        />
+        <FilterChip
+          label="客場"
+          active={kitFilter === 'away'}
+          onClick={() => setKitFilter('away')}
+        />
+      </div>
+
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+        <Sun size={14} className="text-slate-500 shrink-0" />
+        <FilterChip
+          label="全部天氣"
+          active={weatherFilter === 'all'}
+          onClick={() => setWeatherFilter('all')}
+        />
+        {(['sunny', 'cloudy', 'overcast', 'rainy'] as WeatherChoice[]).map((w) => {
+          const icons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
+          const Icon = icons[w];
+          return (
+            <FilterChip
+              key={w}
+              label={WEATHER_LABELS[w]}
+              icon={<Icon size={11} />}
+              active={weatherFilter === w}
+              onClick={() => setWeatherFilter(w)}
+            />
+          );
+        })}
+      </div>
+
       <div className="relative mb-4">
         <Search
           size={18}
@@ -211,20 +257,23 @@ function FilterChip({
   label,
   active,
   onClick,
+  icon,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  icon?: React.ReactNode;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+      className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors inline-flex items-center gap-1 ${
         active
           ? 'bg-emerald-500 text-slate-900 border-emerald-500'
           : 'bg-slate-800 text-slate-300 border-slate-700'
       }`}
     >
+      {icon}
       {label}
     </button>
   );

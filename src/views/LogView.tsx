@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import type { Player, Tournament } from '@/lib/types';
+import type { Player, Tournament, Team } from '@/lib/types';
 import { LogForm } from '@/components/LogForm';
 
 export function LogView({
@@ -7,6 +7,7 @@ export function LogView({
   loading,
   error,
   teamId,
+  teams,
   tournaments,
   onSaved,
 }: {
@@ -14,6 +15,7 @@ export function LogView({
   loading: boolean;
   error: string | null;
   teamId: string | null;
+  teams: Team[];
   tournaments: Tournament[];
   onSaved: () => void;
 }) {
@@ -33,6 +35,7 @@ export function LogView({
     <LogForm
       players={players}
       teamId={teamId}
+      teams={teams}
       tournaments={tournaments}
       onSaved={onSaved}
     />

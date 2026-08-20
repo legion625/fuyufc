@@ -9,9 +9,14 @@ import {
   Trophy,
   MapPin,
   Shield,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudDrizzle,
 } from 'lucide-react';
 import type { MatchWithPerformances, Team } from '@/lib/types';
-import { getResult, resultLabel, stageLabel, pkLabel, pkScoreLabel } from '@/lib/types';
+import { getResult, resultLabel, stageLabel, pkLabel, pkScoreLabel, WEATHER_LABELS } from '@/lib/types';
+import type { WeatherChoice } from '@/lib/types';
 import { PlayerName } from '@/components/PlayerName';
 
 const resultStyles: Record<string, string> = {
@@ -48,6 +53,9 @@ export function MatchCard({
   compact?: boolean;
 }) {
   const teamName = teams?.find((t) => t.id === match.team_id)?.name;
+  const team = teams?.find((t) => t.id === match.team_id);
+  const kitColor = match.kit === 'home' ? team?.home_kit_color : match.kit === 'away' ? team?.away_kit_color : null;
+  const weatherIcons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
   const [open, setOpen] = useState(false);
   const result = getResult(match.our_score, match.opp_score, match.pk_our, match.pk_opp);
   const pk = pkLabel(match.our_score, match.opp_score, match.pk_our, match.pk_opp);
@@ -122,7 +130,7 @@ export function MatchCard({
         </div>
 
         {/* Row 2.5: team + tournament + location tags */}
-        {(teamName || match.tournament || match.location) && (
+        {(teamName || match.tournament || match.location || kitColor || match.weather) && (
           <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[10px]">
             {teamName && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-400/90 ring-1 ring-sky-500/20 font-medium">
@@ -130,6 +138,21 @@ export function MatchCard({
                 <span className="truncate max-w-[30vw]">{teamName}</span>
               </span>
             )}
+            {kitColor && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-600/30 text-slate-300 ring-1 ring-slate-500/20 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full border border-slate-400/40" style={{ backgroundColor: kitColor }} />
+                {match.kit === 'home' ? '主場' : '客場'}
+              </span>
+            )}
+            {match.weather && (() => {
+              const WIcon = weatherIcons[match.weather];
+              return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-600/30 text-slate-300 ring-1 ring-slate-500/20 font-medium">
+                  <WIcon size={10} className="shrink-0" />
+                  {WEATHER_LABELS[match.weather]}
+                </span>
+              );
+            })()}
             {match.tournament && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-400/10 text-amber-400/90 ring-1 ring-amber-400/20 font-medium">
                 <Trophy size={10} className="shrink-0" />

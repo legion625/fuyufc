@@ -242,6 +242,7 @@ function App() {
         <EditMatchModal
           match={editTarget}
           players={players}
+          teams={teams}
           tournament={
             editTarget.tournament_id
               ? tournaments.find((t) => t.id === editTarget.tournament_id) ?? null
@@ -256,6 +257,7 @@ function App() {
           tournament={logTournament}
           players={players}
           teamId={logTournament.team_id}
+          teams={teams}
           onClose={() => setLogTournament(null)}
           onSaved={reloadAll}
         />

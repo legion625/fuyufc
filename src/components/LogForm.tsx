@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Check, Loader2, Minus, Plus, X, Footprints } from 'lucide-react';
+import { Check, Loader2, Minus, Plus, X, Footprints, Sun, Cloud, CloudRain, CloudDrizzle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import type { Player, Tournament } from '@/lib/types';
-import { STAGES as STAGE_LIST, stageLabel } from '@/lib/types';
+import type { Player, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
+import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS } from '@/lib/types';
 import { PlayerName } from '@/components/PlayerName';
 
 type Perf = {
@@ -15,14 +15,17 @@ type Perf = {
 export function LogForm({
   players,
   teamId,
+  teams,
   tournaments,
   onSaved,
 }: {
   players: Player[];
   teamId: string | null;
+  teams: Team[];
   tournaments: Tournament[];
   onSaved: () => void;
 }) {
+  const team = teams.find((t) => t.id === teamId);
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [tournamentId, setTournamentId] = useState('');
@@ -34,6 +37,8 @@ export function LogForm({
   const [oppScore, setOppScore] = useState(0);
   const [pkOur, setPkOur] = useState<number | null>(null);
   const [pkOpp, setPkOpp] = useState<number | null>(null);
+  const [kit, setKit] = useState<KitChoice>('home');
+  const [weather, setWeather] = useState<WeatherChoice | null>(null);
   const [perfs, setPerfs] = useState<Record<string, Perf>>(() => {
     const init: Record<string, Perf> = {};
     for (const p of players)
@@ -124,6 +129,8 @@ export function LogForm({
         opp_score: oppScore,
         pk_our: ourScore === oppScore ? pkOur : null,
         pk_opp: ourScore === oppScore ? pkOpp : null,
+        kit,
+        weather,
         team_id: teamId,
       })
       .select()
@@ -181,6 +188,8 @@ export function LogForm({
     setOppScore(0);
     setPkOur(null);
     setPkOpp(null);
+    setKit('home');
+    setWeather(null);
     setStage(0);
     const reset: Record<string, Perf> = {};
     for (const p of players)
@@ -270,6 +279,53 @@ export function LogForm({
                 {stageLabel(s)}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-slate-400 text-xs mb-1.5 font-medium">球衣</label>
+          <div className="flex gap-2">
+            {(['home', 'away'] as KitChoice[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => setKit(k)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                  kit === k
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                    : 'bg-slate-800 border-slate-700 text-slate-300'
+                }`}
+              >
+                <span
+                  className="w-4 h-4 rounded-full border border-slate-500/40"
+                  style={{ backgroundColor: k === 'home' ? team?.home_kit_color : team?.away_kit_color }}
+                />
+                {KIT_LABELS[k]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-slate-400 text-xs mb-1.5 font-medium">天氣</label>
+          <div className="flex gap-2">
+            {(['sunny', 'cloudy', 'overcast', 'rainy'] as WeatherChoice[]).map((w) => {
+              const icons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
+              const Icon = icons[w];
+              return (
+                <button
+                  key={w}
+                  onClick={() => setWeather(weather === w ? null : w)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
+                    weather === w
+                      ? 'bg-sky-500/15 border-sky-500/40 text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <Icon size={14} />
+                  {WEATHER_LABELS[w]}
+                </button>
+              );
+            })}
           </div>
         </div>
 

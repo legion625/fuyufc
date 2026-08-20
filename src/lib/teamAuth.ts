@@ -44,6 +44,8 @@ export async function updateMatch(
     pkOur?: number | null;
     pkOpp?: number | null;
     stage?: number;
+    kit?: string | null;
+    weather?: string | null;
     notes?: string;
     performances?: Perf[];
   }

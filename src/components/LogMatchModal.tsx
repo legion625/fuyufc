@@ -72,12 +72,20 @@ export function LogMatchModal({
     }
   }
 
+  const teamPlayerIds = new Set(
+    players
+      .filter((p) =>
+        p.memberships?.some((m) => m.team_id === selectedTeamId && m.active)
+      )
+      .map((p) => p.id)
+  );
+
   const eligiblePlayers =
     attendedIds == null
-      ? players
+      ? players.filter((p) => teamPlayerIds.has(p.id))
       : isFriendlyMode
-        ? players
-        : players.filter((p) => attendedIds.has(p.id));
+        ? players.filter((p) => teamPlayerIds.has(p.id))
+        : players.filter((p) => attendedIds.has(p.id) && teamPlayerIds.has(p.id));
 
   function togglePlayed(id: string) {
     setPerfs((prev) => ({

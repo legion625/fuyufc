@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+:root,
+.dark {
+  /* Navy / dark theme — based on home kit (navy blue) */
+  --slate-50: #f0f4ff;
+  --slate-100: #dbe5fb;
+  --slate-200: #b8c9f0;
+  --slate-300: #8da3d8;
+  --slate-400: #6480c0;
+  --slate-500: #4a65a8;
+  --slate-600: #3a5188;
+  --slate-700: #2d3f6b;
+  --slate-800: #1e2d4d;
+  --slate-900: #14213d;
+  --slate-950: #0a1424;
+  --primary-text: #f0f4ff;
+  --on-accent: #0a1424;
+  --bg-body: #0a1424;
+}
+
+.light {
+  /* Light theme — based on away kit (white): inverted scale so
+     high slate numbers = light backgrounds, low = dark text */
+  --slate-50: #1a2030;
+  --slate-100: #252d42;
+  --slate-200: #363f58;
+  --slate-300: #4a5573;
+  --slate-400: #647191;
+  --slate-500: #8a9ab5;
+  --slate-600: #b8c4d8;
+  --slate-700: #dde4f0;
+  --slate-800: #eef2f8;
+  --slate-900: #f7f9fc;
+  --slate-950: #ffffff;
+  --primary-text: #1a2030;
+  --on-accent: #1a2030;
+  --bg-body: #ffffff;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-body);
+  color: var(--primary-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC',
+    'Microsoft JhengHei', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* text-white maps to primary text in both themes */
+.text-white {
+  color: var(--primary-text);
+}
+
+/* text-slate-900 used as "on-accent" (dark text on bright buttons) */
+.text-slate-900 {
+  color: var(--on-accent);
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+.light input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.3);
+}
+
+/* Markdown rendering inside changelog modal */
+.changelog-md h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-text);
+  margin: 1.25rem 0 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(100, 128, 192, 0.25);
+}
+.changelog-md h1:first-child { margin-top: 0; }
+.changelog-md h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary-text);
+  margin: 1.25rem 0 0.5rem;
+}
+.changelog-md h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-text);
+  margin: 1rem 0 0.4rem;
+}
+.changelog-md h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-text);
+  margin: 0.75rem 0 0.35rem;
+}
+.changelog-md p { margin: 0.5rem 0; }
+.changelog-md ul,
+.changelog-md ol { margin: 0.5rem 0; padding-left: 1.25rem; }
+.changelog-md li { margin: 0.25rem 0; }
+.changelog-md ul li { list-style: disc; }
+.changelog-md ol li { list-style: decimal; }
+.changelog-md strong { color: var(--primary-text); font-weight: 600; }
+.changelog-md em { font-style: italic; }
+.changelog-md code {
+  font-size: 0.85em;
+  background: rgba(100, 128, 192, 0.15);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+}
+.changelog-md pre {
+  background: rgba(10, 20, 36, 0.6);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+.changelog-md pre code {
+  background: none;
+  padding: 0;
+}
+.changelog-md blockquote {
+  border-left: 3px solid rgba(100, 128, 192, 0.4);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  opacity: 0.8;
+}
+.changelog-md hr {
+  border: none;
+  border-top: 1px solid rgba(100, 128, 192, 0.25);
+  margin: 1rem 0;
+}
+.changelog-md a {
+  color: #38bdf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.changelog-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+}
+.changelog-md th,
+.changelog-md td {
+  border: 1px solid rgba(100, 128, 192, 0.25);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+.changelog-md th { font-weight: 600; color: var(--primary-text); }

@@ -28,11 +28,12 @@ export function LogMatchModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const team = teams.find((t) => t.id === teamId);
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(
     tournament?.start_date ?? today
   );
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(teamId);
+  const team = teams.find((t) => t.id === selectedTeamId);
   const [stage, setStage] = useState<number>(0);
   const [opponent, setOpponent] = useState('');
   const [ourScore, setOurScore] = useState(0);
@@ -103,7 +104,7 @@ export function LogMatchModal({
       setMsg({ ok: false, text: '請填寫對手' });
       return;
     }
-    if (!teamId) {
+    if (!selectedTeamId) {
       setMsg({ ok: false, text: '尚未選擇球隊' });
       return;
     }
@@ -126,7 +127,7 @@ export function LogMatchModal({
           notes: notes.trim(),
           kit,
           weather,
-          team_id: teamId,
+          team_id: selectedTeamId,
         })
         .select()
         .single();
@@ -200,6 +201,25 @@ export function LogMatchModal({
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 pt-4 pb-3 space-y-4">
+            {isFriendlyMode && teams.length > 1 && (
+              <div>
+                <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                  球隊
+                </label>
+                <select
+                  value={selectedTeamId ?? ''}
+                  onChange={(e) => setSelectedTeamId(e.target.value || null)}
+                  className={inputCls}
+                >
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
                 比賽日期

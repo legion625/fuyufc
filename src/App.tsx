@@ -259,7 +259,7 @@ function App() {
           players={players}
           teamId={logTournament?.team_id ?? effectiveTeamIds[0] ?? null}
           teams={teams}
-          onClose={() => setLogTournament(null)}
+          onClose={() => setLogTournament(undefined)}
           onSaved={reloadAll}
         />
       )}

@@ -1,3 +1,17 @@
+export type CompetitionType = 'cup' | 'league' | 'friendly';
+
+export const COMPETITION_TYPE_LABELS: Record<CompetitionType, string> = {
+  cup: '盃賽',
+  league: '季賽',
+  friendly: '友誼賽',
+};
+
+export const COMPETITION_TYPE_ICONS: Record<CompetitionType, string> = {
+  cup: 'Trophy',
+  league: 'CalendarRange',
+  friendly: 'Handshake',
+};
+
 export type Team = {
   id: string;
   name: string;
@@ -53,6 +67,7 @@ export type Tournament = {
   id: string;
   name: string;
   team_id: string;
+  type: CompetitionType;
   start_date: string | null;
   end_date: string | null;
   location: string | null;

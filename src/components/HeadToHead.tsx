@@ -139,7 +139,7 @@ export function HeadToHead({
         <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
           <Filter size={14} className="text-slate-500 shrink-0" />
           <FilterChip
-            label="全部盃賽"
+            label="全部賽事"
             active={tournamentFilter === 'all'}
             onClick={() => setTournamentFilter('all')}
           />

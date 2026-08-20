@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, Loader2, Minus, Plus, X, Footprints } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Player, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
-import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS } from '@/lib/types';
+import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS, COMPETITION_TYPE_LABELS } from '@/lib/types';
 import { Sun, Cloud, CloudRain, CloudDrizzle } from 'lucide-react';
 import { PlayerName } from '@/components/PlayerName';
 
@@ -21,18 +21,19 @@ export function LogMatchModal({
   onClose,
   onSaved,
 }: {
-  tournament: Tournament;
+  tournament: Tournament | null;
   players: Player[];
   teamId: string | null;
   teams: Team[];
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const team = teams.find((t) => t.id === teamId);
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(
-    tournament.start_date ?? today
+    tournament?.start_date ?? today
   );
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(teamId);
+  const team = teams.find((t) => t.id === selectedTeamId);
   const [stage, setStage] = useState<number>(0);
   const [opponent, setOpponent] = useState('');
   const [ourScore, setOurScore] = useState(0);
@@ -53,21 +54,38 @@ export function LogMatchModal({
 
   // Only show players who are marked as attending this tournament
   const [attendedIds, setAttendedIds] = useState<Set<string> | null>(null);
+  const isFriendlyMode = tournament == null;
+  const showStages = tournament?.type === 'cup';
   if (attendedIds === null) {
-    (async () => {
-      const { data } = await supabase
-        .from('tournament_attendances')
-        .select('player_id')
-        .eq('tournament_id', tournament.id)
-        .eq('attended', true);
-      setAttendedIds(new Set((data ?? []).map((r) => r.player_id)));
-    })();
+    if (isFriendlyMode) {
+      // Friendly match: all players are eligible, no attendance filtering
+      setAttendedIds(new Set(players.map((p) => p.id)));
+    } else {
+      (async () => {
+        const { data } = await supabase
+          .from('tournament_attendances')
+          .select('player_id')
+          .eq('tournament_id', tournament!.id)
+          .eq('attended', true);
+        setAttendedIds(new Set((data ?? []).map((r) => r.player_id)));
+      })();
+    }
   }
+
+  const teamPlayerIds = new Set(
+    players
+      .filter((p) =>
+        p.memberships?.some((m) => m.team_id === selectedTeamId && m.active)
+      )
+      .map((p) => p.id)
+  );
 
   const eligiblePlayers =
     attendedIds == null
-      ? players
-      : players.filter((p) => attendedIds.has(p.id));
+      ? players.filter((p) => teamPlayerIds.has(p.id))
+      : isFriendlyMode
+        ? players.filter((p) => teamPlayerIds.has(p.id))
+        : players.filter((p) => attendedIds.has(p.id) && teamPlayerIds.has(p.id));
 
   function togglePlayed(id: string) {
     setPerfs((prev) => ({
@@ -94,7 +112,7 @@ export function LogMatchModal({
       setMsg({ ok: false, text: '請填寫對手' });
       return;
     }
-    if (!teamId) {
+    if (!selectedTeamId) {
       setMsg({ ok: false, text: '尚未選擇球隊' });
       return;
     }
@@ -105,10 +123,10 @@ export function LogMatchModal({
         .from('matches')
         .insert({
           match_date: date,
-          tournament: tournament.name,
-          tournament_id: tournament.id,
-          stage,
-          location: tournament.location ?? '',
+          tournament: tournament?.name ?? '友誼賽',
+          tournament_id: tournament?.id ?? null,
+          stage: showStages ? stage : 0,
+          location: tournament?.location ?? '',
           opponent: opponent.trim(),
           our_score: ourScore,
           opp_score: oppScore,
@@ -117,7 +135,7 @@ export function LogMatchModal({
           notes: notes.trim(),
           kit,
           weather,
-          team_id: teamId,
+          team_id: selectedTeamId,
         })
         .select()
         .single();
@@ -182,14 +200,34 @@ export function LogMatchModal({
             </button>
           </div>
           <div className="text-emerald-400 text-xs font-semibold">
-            {tournament.name}
-            {tournament.location ? ` · ${tournament.location}` : ''}
+            {tournament
+              ? `${tournament.name}${tournament.location ? ` · ${tournament.location}` : ''}`
+              : '友誼賽'}
           </div>
         </div>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 pt-4 pb-3 space-y-4">
+            {isFriendlyMode && teams.length > 1 && (
+              <div>
+                <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                  球隊
+                </label>
+                <select
+                  value={selectedTeamId ?? ''}
+                  onChange={(e) => setSelectedTeamId(e.target.value || null)}
+                  className={inputCls}
+                >
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
                 比賽日期
@@ -202,6 +240,7 @@ export function LogMatchModal({
               />
             </div>
 
+            {showStages && (
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
                 階段
@@ -222,6 +261,7 @@ export function LogMatchModal({
                 ))}
               </div>
             </div>
+            )}
 
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
@@ -365,16 +405,18 @@ export function LogMatchModal({
               <Footprints size={16} className="text-sky-400" /> 上場球員
             </div>
             <div className="text-slate-500 text-xs">
-              僅列出此盃賽有出席的球員
+              {isFriendlyMode
+                ? '勾選該場比賽有實際上場的球員'
+                : '僅列出此賽事有出席的球員'}
             </div>
           </div>
 
           <div className="px-5 pb-4 space-y-2">
-            {attendedIds != null && eligiblePlayers.length === 0 ? (
+            {attendedIds != null && eligiblePlayers.length === 0 && !isFriendlyMode ? (
               <p className="text-slate-500 text-xs py-4 text-center">
-                此盃賽尚無出席球員，請先編輯盃賽勾選出席球員。
+                此賽事尚無出席球員，請先編輯賽事勾選出席球員。
               </p>
-            ) : attendedIds == null ? (
+            ) : attendedIds == null && !isFriendlyMode ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="animate-spin text-slate-500" size={18} />
               </div>

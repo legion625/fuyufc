@@ -347,7 +347,7 @@ export function EditMatchModal({
             </div>
             <div className="text-slate-500 text-xs">
               {tournament
-                ? '僅列出此盃賽有出席的球員'
+                ? '僅列出此賽事有出席的球員'
                 : '勾選該場比賽有實際上場的球員'}
             </div>
           </div>
@@ -355,7 +355,7 @@ export function EditMatchModal({
           <div className="px-5 pb-4 space-y-2">
             {attendedIds != null && eligiblePlayers.length === 0 ? (
               <p className="text-slate-500 text-xs py-4 text-center">
-                此盃賽尚無出席球員，請到盃賽編輯器勾選出席球員。
+                此賽事尚無出席球員，請到賽事編輯器勾選出席球員。
               </p>
             ) : (
               eligiblePlayers.map((p) => {

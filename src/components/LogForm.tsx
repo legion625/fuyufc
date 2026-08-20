@@ -98,7 +98,7 @@ export function LogForm({
         .single();
       if (tErr || !tRow) {
         setSaving(false);
-        setMsg({ ok: false, text: '建立盃賽失敗：' + (tErr?.message ?? '未知錯誤') });
+        setMsg({ ok: false, text: '建立賽事失敗：' + (tErr?.message ?? '未知錯誤') });
         return;
       }
       tId = tRow.id;
@@ -112,7 +112,7 @@ export function LogForm({
 
     if (!tName) {
       setSaving(false);
-      setMsg({ ok: false, text: '請選擇或建立盃賽' });
+      setMsg({ ok: false, text: '請選擇或建立賽事' });
       return;
     }
 
@@ -218,7 +218,7 @@ export function LogForm({
 
         <div>
           <label className="block text-slate-400 text-xs mb-1.5 font-medium">
-            盃賽
+            賽事
           </label>
           {tournaments.length > 0 && (
             <select
@@ -229,7 +229,7 @@ export function LogForm({
               }}
               className={inputCls}
             >
-              <option value="">— 選擇現有盃賽 —</option>
+              <option value="">— 選擇現有賽事 —</option>
               {tournaments.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -243,14 +243,14 @@ export function LogForm({
               setNewTournamentName(e.target.value);
               if (e.target.value) setTournamentId('');
             }}
-            placeholder={tournaments.length ? '或輸入新盃賽名稱' : '輸入盃賽名稱'}
+            placeholder={tournaments.length ? '或輸入新賽事名稱' : '輸入賽事名稱'}
             className={tournaments.length ? `${inputCls} mt-2` : inputCls}
           />
           {newTournamentName.trim() && (
             <input
               value={newTournamentLocation}
               onChange={(e) => setNewTournamentLocation(e.target.value)}
-              placeholder="盃賽地點（例如：百齡橋下球場）"
+              placeholder="賽事地點（例如：百齡橋下球場）"
               className={`${inputCls} mt-2`}
             />
           )}

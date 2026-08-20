@@ -57,6 +57,7 @@ export async function updateTournament(
   tournamentId: string,
   fields: {
     tournamentName?: string;
+    type?: string;
     startDate?: string | null;
     endDate?: string | null;
     location?: string | null;

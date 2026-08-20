@@ -46,6 +46,7 @@ type Body = {
   notes?: string;
   performances?: Perf[];
   tournamentName?: string;
+  type?: string;
   startDate?: string;
   endDate?: string;
   location?: string;
@@ -140,13 +141,14 @@ Deno.serve(async (req: Request) => {
 
     // --- update tournament (NO password — open editing) ---
     if (body.action === "update-tournament") {
-      const { tournamentId, tournamentName, startDate, endDate, location, finalRank } = body;
+      const { tournamentId, tournamentName, type, startDate, endDate, location, finalRank } = body;
       if (!tournamentId) return json({ ok: false, error: "缺少 tournamentId" }, 400);
       const { data: t } = await supabase
         .from("tournaments").select("frozen").eq("id", tournamentId).maybeSingle();
       if (t?.frozen) return json({ ok: false, error: "盃賽已鎖定，無法編輯" }, 403);
       const update: Record<string, unknown> = {};
       if (tournamentName !== undefined) update.name = tournamentName;
+      if (type !== undefined) update.type = type;
       if (startDate !== undefined) update.start_date = startDate || null;
       if (endDate !== undefined) update.end_date = endDate || null;
       if (location !== undefined) update.location = location || null;

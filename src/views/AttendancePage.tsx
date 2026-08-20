@@ -21,7 +21,7 @@ export function AttendancePage({ tournamentId }: { tournamentId: string }) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (!t) {
-        setErr('找不到此盃賽');
+        setErr('找不到此賽事');
         setLoading(false);
         return;
       }

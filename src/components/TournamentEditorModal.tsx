@@ -8,8 +8,8 @@ import {
   deleteTournament,
   changeTournamentTeam,
 } from '@/lib/teamAuth';
-import type { Player, Team, Tournament } from '@/lib/types';
-import { rankLabel, RANK_OPTIONS, RANK_LABELS } from '@/lib/types';
+import type { Player, Team, Tournament, CompetitionType } from '@/lib/types';
+import { rankLabel, RANK_OPTIONS, RANK_LABELS, COMPETITION_TYPE_LABELS } from '@/lib/types';
 import { PlayerName } from '@/components/PlayerName';
 
 type Att = { playerId: string; attended: boolean };
@@ -28,6 +28,7 @@ export function TournamentEditorModal({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(tournament.name);
+  const [compType, setCompType] = useState<CompetitionType>(tournament.type);
   const [startDate, setStartDate] = useState(tournament.start_date ?? '');
   const [endDate, setEndDate] = useState(tournament.end_date ?? '');
   const [location, setLocation] = useState(tournament.location ?? '');
@@ -104,13 +105,14 @@ export function TournamentEditorModal({
   async function save() {
     setMsg(null);
     if (!name.trim()) {
-      setMsg({ ok: false, text: '請填寫盃賽名稱' });
+      setMsg({ ok: false, text: '請填寫賽事名稱' });
       return;
     }
     setSaving(true);
     try {
       await updateTournament(tournament.id, {
         tournamentName: name.trim(),
+        type: compType,
         startDate: startDate || null,
         endDate: endDate || null,
         location: location.trim() || null,
@@ -121,7 +123,7 @@ export function TournamentEditorModal({
         .filter((a): a is Att => a != null)
         .map((a) => ({ player_id: a.playerId, attended: a.attended }));
       await setTournamentAttendance(tournament.id, attRows);
-      setMsg({ ok: true, text: '盃賽已更新！' });
+      setMsg({ ok: true, text: '賽事已更新！' });
       onSaved();
       onClose();
     } catch (e) {
@@ -184,7 +186,7 @@ export function TournamentEditorModal({
       setMsg({ ok: false, text: '請輸入總管密碼' });
       return;
     }
-    if (!confirm(`確定刪除「${tournament.name}」？所有此盃賽的比賽紀錄也會一併刪除。`)) return;
+    if (!confirm(`確定刪除「${tournament.name}」？所有此賽事的比賽紀錄也會一併刪除。`)) return;
     setSaving(true);
     try {
       await deleteTournament(tournament.id, adminPwd);
@@ -204,7 +206,7 @@ export function TournamentEditorModal({
     <div className="fixed inset-0 z-50 overflow-hidden flex flex-col sm:items-center sm:justify-center sm:bg-black/60 sm:backdrop-blur-sm">
       <div className="flex flex-col w-full h-full bg-slate-800 sm:h-auto sm:max-h-[90dvh] sm:max-w-sm sm:rounded-2xl sm:border sm:border-slate-700 sm:shadow-2xl">
         <div className="shrink-0 flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-700/50">
-          <div className="text-white font-semibold text-base">編輯盃賽</div>
+          <div className="text-white font-semibold text-base">編輯賽事</div>
           <button
             onClick={onClose}
             className="text-slate-400 active:scale-90 transition-transform"
@@ -216,14 +218,14 @@ export function TournamentEditorModal({
 
         {tournament.frozen && (
           <div className="flex items-center gap-2 rounded-xl bg-amber-400/10 border border-amber-400/30 px-3.5 py-2.5 text-amber-300 text-xs mb-3">
-            <Lock size={14} /> 此盃賽已鎖定，比賽內容無法編輯
+            <Lock size={14} /> 此賽事已鎖定，比賽內容無法編輯
           </div>
         )}
 
         <div className="space-y-3 mb-4">
           <div>
             <label className="block text-slate-400 text-xs mb-1.5 font-medium">
-              盃賽名稱
+              賽事名稱
             </label>
             <input
               value={name}
@@ -231,6 +233,28 @@ export function TournamentEditorModal({
               className={inputCls}
               disabled={tournament.frozen}
             />
+          </div>
+
+          <div>
+            <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+              類型
+            </label>
+            <div className="flex gap-2">
+              {(['cup', 'league'] as CompetitionType[]).map((ty) => (
+                <button
+                  key={ty}
+                  onClick={() => setCompType(ty)}
+                  disabled={tournament.frozen}
+                  className={`flex-1 text-xs font-medium px-3 py-2.5 rounded-lg border transition-colors ${
+                    compType === ty
+                      ? 'bg-amber-400/15 border-amber-400/40 text-amber-300'
+                      : 'bg-slate-900 text-slate-300 border-slate-700'
+                  } ${tournament.frozen ? 'opacity-50' : ''}`}
+                >
+                  {COMPETITION_TYPE_LABELS[ty]}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -317,7 +341,7 @@ export function TournamentEditorModal({
             )}
           </div>
           <div className="text-slate-500 text-xs mb-2">
-            勾選有出席此盃賽的球員
+            勾選有出席此賽事的球員
           </div>
           <div className="space-y-2">
             {displayPlayers.map((p) => {
@@ -414,7 +438,7 @@ export function TournamentEditorModal({
                 <Loader2 size={16} className="animate-spin" /> 儲存中…
               </>
             ) : (
-              '儲存盃賽資料'
+              '儲存賽事資料'
             )}
           </button>
         )}
@@ -465,7 +489,7 @@ export function TournamentEditorModal({
                 </button>
                 {newTeamId !== tournament.team_id && !tournament.frozen && (
                   <p className="text-[11px] text-amber-400/80">
-                    盃賽及其所有比賽紀錄將移轉至所選球隊。未出席且不屬於新球隊的球員，其出席紀錄將被清除。
+                    賽事及其所有比賽紀錄將移轉至所選球隊。未出席且不屬於新球隊的球員，其出席紀錄將被清除。
                   </p>
                 )}
               </div>
@@ -490,7 +514,7 @@ export function TournamentEditorModal({
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center justify-center gap-1.5 active:scale-95 transition-transform disabled:opacity-60"
                 >
-                  <Trash2 size={14} /> 刪除盃賽
+                  <Trash2 size={14} /> 刪除賽事
                 </button>
               </div>
             </div>

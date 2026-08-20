@@ -4,7 +4,7 @@ export type TabId = 'results' | 'tournaments' | 'h2h' | 'stats' | 'players' | 't
 
 const tabs: { id: TabId; label: string; icon: typeof Trophy }[] = [
   { id: 'results', label: '賽果', icon: Trophy },
-  { id: 'tournaments', label: '盃賽', icon: CalendarPlus },
+  { id: 'tournaments', label: '賽事', icon: CalendarPlus },
   { id: 'h2h', label: '對戰', icon: Swords },
   { id: 'stats', label: '排行', icon: BarChart3 },
   { id: 'players', label: '球員', icon: Users },

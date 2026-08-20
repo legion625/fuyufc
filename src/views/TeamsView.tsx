@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Player, PlayerMembership, Team } from '@/lib/types';
+import { KIT_COLOR_PRESETS } from '@/lib/types';
 import { PlayerName } from '@/components/PlayerName';
 
 export function TeamsView({
@@ -285,7 +286,21 @@ function TeamCard({
             <Shield size={18} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-white font-bold text-sm truncate">{team.name}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold text-sm truncate">{team.name}</span>
+              <span className="flex items-center gap-1 shrink-0">
+                <span
+                  className="w-3 h-3 rounded-full border border-slate-500/40"
+                  style={{ backgroundColor: team.home_kit_color }}
+                  title="主場球衣"
+                />
+                <span
+                  className="w-3 h-3 rounded-full border border-slate-500/40"
+                  style={{ backgroundColor: team.away_kit_color }}
+                  title="客場球衣"
+                />
+              </span>
+            </div>
             <div className="text-slate-500 text-xs">
               {team.slug && <span className="text-sky-500/70 font-mono mr-1">{team.slug}</span>}
               {playerCount} 位球員
@@ -385,6 +400,44 @@ function TeamCard({
   );
 }
 
+function KitColorPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (c: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-slate-400 text-xs mb-1.5 font-medium">{label}</label>
+      <div className="flex items-center gap-2 flex-wrap">
+        {KIT_COLOR_PRESETS.map((c) => (
+          <button
+            key={c}
+            onClick={() => onChange(c)}
+            className={`w-8 h-8 rounded-full border-2 transition-transform active:scale-90 ${
+              value.toLowerCase() === c.toLowerCase()
+                ? 'border-emerald-400 ring-2 ring-emerald-400/30'
+                : 'border-slate-600'
+            }`}
+            style={{ backgroundColor: c }}
+            aria-label={c}
+          />
+        ))}
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-8 h-8 rounded-full border-2 border-slate-600 bg-transparent cursor-pointer p-0"
+          aria-label="自訂顏色"
+        />
+      </div>
+    </div>
+  );
+}
+
 function RenameTeamModal({
   team,
   onClose,
@@ -396,6 +449,8 @@ function RenameTeamModal({
 }) {
   const [name, setName] = useState(team.name);
   const [slug, setSlug] = useState(team.slug ?? '');
+  const [homeColor, setHomeColor] = useState(team.home_kit_color ?? '#1e40af');
+  const [awayColor, setAwayColor] = useState(team.away_kit_color ?? '#ffffff');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -403,9 +458,11 @@ function RenameTeamModal({
     if (!name.trim()) return;
     setSaving(true);
     setErr(null);
-    const updates: { name: string; slug?: string } = { name: name.trim() };
+    const updates: { name: string; slug?: string; home_kit_color?: string; away_kit_color?: string } = { name: name.trim() };
     const trimmedSlug = slug.trim().replace(/\s+/g, '-');
     if (trimmedSlug) updates.slug = trimmedSlug;
+    updates.home_kit_color = homeColor;
+    updates.away_kit_color = awayColor;
     const { error } = await supabase
       .from('teams')
       .update(updates)
@@ -448,6 +505,8 @@ function RenameTeamModal({
             className={inputCls}
           />
         </div>
+        <KitColorPicker label="主場球衣" value={homeColor} onChange={setHomeColor} />
+        <KitColorPicker label="客場球衣" value={awayColor} onChange={setAwayColor} />
         {err && <div className="text-rose-400 text-xs">{err}</div>}
         <button
           onClick={submit}

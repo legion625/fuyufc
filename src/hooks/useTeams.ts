@@ -10,7 +10,7 @@ export function useTeams() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('teams')
-      .select('id, name, slug')
+      .select('id, name, slug, home_kit_color, away_kit_color')
       .order('name', { ascending: true });
     if (error) setError(error.message);
     else setTeams(data ?? []);

@@ -24,7 +24,7 @@ import type { MatchWithPerformances, Tournament } from '@/lib/types';
 
 const titles: Record<TabId, string> = {
   results: '最新賽果',
-  tournaments: '盃賽管理',
+  tournaments: '賽事管理',
   h2h: '對戰紀錄庫',
   stats: '個人排行榜',
   players: '球員管理',
@@ -41,7 +41,7 @@ function App() {
   const [delTarget, setDelTarget] = useState<MatchWithPerformances | null>(null);
   const [editTarget, setEditTarget] = useState<MatchWithPerformances | null>(null);
   const [editTournament, setEditTournament] = useState<Tournament | null>(null);
-  const [logTournament, setLogTournament] = useState<Tournament | null>(null);
+  const [logTournament, setLogTournament] = useState<Tournament | null | undefined>(undefined);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareName, setShareName] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -180,6 +180,7 @@ function App() {
             onEdit={(m) => setEditTarget(m)}
             onEditTournament={(t) => setEditTournament(t)}
             onLogMatch={(t) => setLogTournament(t)}
+            onLogFriendly={() => setLogTournament(null)}
           />
         )}
         {tab === 'tournaments' && (
@@ -242,6 +243,7 @@ function App() {
         <EditMatchModal
           match={editTarget}
           players={players}
+          teams={teams}
           tournament={
             editTarget.tournament_id
               ? tournaments.find((t) => t.id === editTarget.tournament_id) ?? null
@@ -251,12 +253,13 @@ function App() {
           onSaved={reloadAll}
         />
       )}
-      {logTournament && (
+      {logTournament !== undefined && (
         <LogMatchModal
           tournament={logTournament}
           players={players}
-          teamId={logTournament.team_id}
-          onClose={() => setLogTournament(null)}
+          teamId={logTournament?.team_id ?? effectiveTeamIds[0] ?? null}
+          teams={teams}
+          onClose={() => setLogTournament(undefined)}
           onSaved={reloadAll}
         />
       )}

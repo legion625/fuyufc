@@ -17,7 +17,7 @@ export function useTournaments(teamIds: string[]) {
     setLoading(true);
     const { data } = await supabase
       .from('tournaments')
-      .select('id, name, team_id, start_date, end_date, location, final_rank, frozen, created_at')
+      .select('id, name, team_id, type, start_date, end_date, location, final_rank, frozen, created_at')
       .in('team_id', teamIds)
       .order('start_date', { ascending: false, nullsFirst: false });
     setTournaments((data ?? []) as Tournament[]);

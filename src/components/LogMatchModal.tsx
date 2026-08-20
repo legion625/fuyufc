@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Check, Loader2, Minus, Plus, X, Footprints } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import type { Player, Tournament } from '@/lib/types';
-import { STAGES as STAGE_LIST, stageLabel } from '@/lib/types';
+import type { Player, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
+import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS, COMPETITION_TYPE_LABELS } from '@/lib/types';
+import { Sun, Cloud, CloudRain, CloudDrizzle } from 'lucide-react';
 import { PlayerName } from '@/components/PlayerName';
 
 type Perf = {
@@ -16,19 +17,23 @@ export function LogMatchModal({
   tournament,
   players,
   teamId,
+  teams,
   onClose,
   onSaved,
 }: {
-  tournament: Tournament;
+  tournament: Tournament | null;
   players: Player[];
   teamId: string | null;
+  teams: Team[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(
-    tournament.start_date ?? today
+    tournament?.start_date ?? today
   );
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(teamId);
+  const team = teams.find((t) => t.id === selectedTeamId);
   const [stage, setStage] = useState<number>(0);
   const [opponent, setOpponent] = useState('');
   const [ourScore, setOurScore] = useState(0);
@@ -36,6 +41,8 @@ export function LogMatchModal({
   const [pkOur, setPkOur] = useState<number | null>(null);
   const [pkOpp, setPkOpp] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
+  const [kit, setKit] = useState<KitChoice>('home');
+  const [weather, setWeather] = useState<WeatherChoice | null>(null);
   const [perfs, setPerfs] = useState<Record<string, Perf>>(() => {
     const init: Record<string, Perf> = {};
     for (const p of players)
@@ -47,21 +54,38 @@ export function LogMatchModal({
 
   // Only show players who are marked as attending this tournament
   const [attendedIds, setAttendedIds] = useState<Set<string> | null>(null);
+  const isFriendlyMode = tournament == null;
+  const showStages = tournament?.type === 'cup';
   if (attendedIds === null) {
-    (async () => {
-      const { data } = await supabase
-        .from('tournament_attendances')
-        .select('player_id')
-        .eq('tournament_id', tournament.id)
-        .eq('attended', true);
-      setAttendedIds(new Set((data ?? []).map((r) => r.player_id)));
-    })();
+    if (isFriendlyMode) {
+      // Friendly match: all players are eligible, no attendance filtering
+      setAttendedIds(new Set(players.map((p) => p.id)));
+    } else {
+      (async () => {
+        const { data } = await supabase
+          .from('tournament_attendances')
+          .select('player_id')
+          .eq('tournament_id', tournament!.id)
+          .eq('attended', true);
+        setAttendedIds(new Set((data ?? []).map((r) => r.player_id)));
+      })();
+    }
   }
+
+  const teamPlayerIds = new Set(
+    players
+      .filter((p) =>
+        p.memberships?.some((m) => m.team_id === selectedTeamId && m.active)
+      )
+      .map((p) => p.id)
+  );
 
   const eligiblePlayers =
     attendedIds == null
-      ? players
-      : players.filter((p) => attendedIds.has(p.id));
+      ? players.filter((p) => teamPlayerIds.has(p.id))
+      : isFriendlyMode
+        ? players.filter((p) => teamPlayerIds.has(p.id))
+        : players.filter((p) => attendedIds.has(p.id) && teamPlayerIds.has(p.id));
 
   function togglePlayed(id: string) {
     setPerfs((prev) => ({
@@ -88,7 +112,7 @@ export function LogMatchModal({
       setMsg({ ok: false, text: '請填寫對手' });
       return;
     }
-    if (!teamId) {
+    if (!selectedTeamId) {
       setMsg({ ok: false, text: '尚未選擇球隊' });
       return;
     }
@@ -99,17 +123,19 @@ export function LogMatchModal({
         .from('matches')
         .insert({
           match_date: date,
-          tournament: tournament.name,
-          tournament_id: tournament.id,
-          stage,
-          location: tournament.location ?? '',
+          tournament: tournament?.name ?? '友誼賽',
+          tournament_id: tournament?.id ?? null,
+          stage: showStages ? stage : 0,
+          location: tournament?.location ?? '',
           opponent: opponent.trim(),
           our_score: ourScore,
           opp_score: oppScore,
           pk_our: ourScore === oppScore ? pkOur : null,
           pk_opp: ourScore === oppScore ? pkOpp : null,
           notes: notes.trim(),
-          team_id: teamId,
+          kit,
+          weather,
+          team_id: selectedTeamId,
         })
         .select()
         .single();
@@ -145,6 +171,8 @@ export function LogMatchModal({
 
       setSaving(false);
       setMsg({ ok: true, text: '比賽結果已登錄！' });
+      setKit('home');
+      setWeather(null);
       onSaved();
       onClose();
     } catch (e) {
@@ -172,14 +200,34 @@ export function LogMatchModal({
             </button>
           </div>
           <div className="text-emerald-400 text-xs font-semibold">
-            {tournament.name}
-            {tournament.location ? ` · ${tournament.location}` : ''}
+            {tournament
+              ? `${tournament.name}${tournament.location ? ` · ${tournament.location}` : ''}`
+              : '友誼賽'}
           </div>
         </div>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 pt-4 pb-3 space-y-4">
+            {isFriendlyMode && teams.length > 1 && (
+              <div>
+                <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                  球隊
+                </label>
+                <select
+                  value={selectedTeamId ?? ''}
+                  onChange={(e) => setSelectedTeamId(e.target.value || null)}
+                  className={inputCls}
+                >
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
                 比賽日期
@@ -192,6 +240,7 @@ export function LogMatchModal({
               />
             </div>
 
+            {showStages && (
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
                 階段
@@ -212,6 +261,7 @@ export function LogMatchModal({
                 ))}
               </div>
             </div>
+            )}
 
             <div>
               <label className="block text-slate-400 text-xs mb-1.5 font-medium">
@@ -290,21 +340,83 @@ export function LogMatchModal({
             </div>
           </div>
 
+          <div className="px-5 pb-5 pt-1 space-y-4">
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">球衣</label>
+              <div className="flex gap-2">
+                {(['home', 'away'] as KitChoice[]).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setKit(k)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                      kit === k
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                        : 'bg-slate-900 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full border border-slate-500/40"
+                      style={{ backgroundColor: k === 'home' ? team?.home_kit_color : team?.away_kit_color }}
+                    />
+                    {KIT_LABELS[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">天氣</label>
+              <div className="flex gap-2">
+                {(['sunny', 'cloudy', 'overcast', 'rainy'] as WeatherChoice[]).map((w) => {
+                  const icons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
+                  const Icon = icons[w];
+                  return (
+                    <button
+                      key={w}
+                      onClick={() => setWeather(weather === w ? null : w)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
+                        weather === w
+                          ? 'bg-sky-500/15 border-sky-500/40 text-white'
+                          : 'bg-slate-900 border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <Icon size={14} />
+                      {WEATHER_LABELS[w]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                備註
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
+                rows={3}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
+              />
+            </div>
+          </div>
+
           <div className="px-5 pb-3">
             <div className="flex items-center gap-2 text-slate-300 text-sm font-semibold mb-0.5">
               <Footprints size={16} className="text-sky-400" /> 上場球員
             </div>
             <div className="text-slate-500 text-xs">
-              僅列出此盃賽有出席的球員
+              {isFriendlyMode
+                ? '勾選該場比賽有實際上場的球員'
+                : '僅列出此賽事有出席的球員'}
             </div>
           </div>
 
           <div className="px-5 pb-4 space-y-2">
-            {attendedIds != null && eligiblePlayers.length === 0 ? (
+            {attendedIds != null && eligiblePlayers.length === 0 && !isFriendlyMode ? (
               <p className="text-slate-500 text-xs py-4 text-center">
-                此盃賽尚無出席球員，請先編輯盃賽勾選出席球員。
+                此賽事尚無出席球員，請先編輯賽事勾選出席球員。
               </p>
-            ) : attendedIds == null ? (
+            ) : attendedIds == null && !isFriendlyMode ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="animate-spin text-slate-500" size={18} />
               </div>
@@ -377,19 +489,6 @@ export function LogMatchModal({
                 );
               })
             )}
-          </div>
-
-          <div className="px-5 pb-5 pt-1">
-            <label className="block text-slate-400 text-xs mb-1.5 font-medium">
-              備註
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
-              rows={3}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
-            />
           </div>
         </div>
 

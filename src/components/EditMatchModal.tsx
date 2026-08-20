@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, Minus, Plus, X, Footprints } from 'lucide-react';
+import { Check, Loader2, Minus, Plus, X, Footprints, Sun, Cloud, CloudRain, CloudDrizzle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { updateMatch } from '@/lib/teamAuth';
-import type { MatchWithPerformances, Player, Tournament } from '@/lib/types';
-import { STAGES as STAGE_LIST, stageLabel } from '@/lib/types';
+import type { MatchWithPerformances, Player, Tournament, Team, KitChoice, WeatherChoice } from '@/lib/types';
+import { STAGES as STAGE_LIST, stageLabel, KIT_LABELS, WEATHER_LABELS } from '@/lib/types';
 
 type Perf = {
   playerId: string;
@@ -17,15 +17,18 @@ export function EditMatchModal({
   match,
   players,
   tournament,
+  teams,
   onClose,
   onSaved,
 }: {
   match: MatchWithPerformances;
   players: Player[];
   tournament: Tournament | null;
+  teams: Team[];
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const team = teams.find((t) => t.id === match.team_id);
   const [date, setDate] = useState(match.match_date);
   const [stage, setStage] = useState<number>(match.stage ?? 0);
   const [opponent, setOpponent] = useState(match.opponent);
@@ -34,6 +37,8 @@ export function EditMatchModal({
   const [pkOur, setPkOur] = useState<number | null>(match.pk_our);
   const [pkOpp, setPkOpp] = useState<number | null>(match.pk_opp);
   const [notes, setNotes] = useState(match.notes ?? '');
+  const [kit, setKit] = useState<KitChoice | null>(match.kit ?? 'home');
+  const [weather, setWeather] = useState<WeatherChoice | null>(match.weather ?? null);
   const [perfs, setPerfs] = useState<Record<string, Perf>>(() => {
     const init: Record<string, Perf> = {};
     const map = new Map(match.performances.map((p) => [p.player_id, p]));
@@ -120,6 +125,8 @@ export function EditMatchModal({
         pkOur: ourScore === oppScore ? pkOur : null,
         pkOpp: ourScore === oppScore ? pkOpp : null,
         stage,
+        kit,
+        weather,
         notes: notes.trim(),
         performances: perfRows,
       });
@@ -274,13 +281,73 @@ export function EditMatchModal({
             </div>
           </div>
 
+          <div className="px-5 pb-5 pt-1 space-y-4">
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">球衣</label>
+              <div className="flex gap-2">
+                {(['home', 'away'] as KitChoice[]).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setKit(kit === k ? null : k)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                      kit === k
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                        : 'bg-slate-900 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full border border-slate-500/40"
+                      style={{ backgroundColor: k === 'home' ? team?.home_kit_color : team?.away_kit_color }}
+                    />
+                    {KIT_LABELS[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">天氣</label>
+              <div className="flex gap-2">
+                {(['sunny', 'cloudy', 'overcast', 'rainy'] as WeatherChoice[]).map((w) => {
+                  const icons: Record<WeatherChoice, typeof Sun> = { sunny: Sun, cloudy: Cloud, overcast: CloudDrizzle, rainy: CloudRain };
+                  const Icon = icons[w];
+                  return (
+                    <button
+                      key={w}
+                      onClick={() => setWeather(weather === w ? null : w)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
+                        weather === w
+                          ? 'bg-sky-500/15 border-sky-500/40 text-white'
+                          : 'bg-slate-900 border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <Icon size={14} />
+                      {WEATHER_LABELS[w]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1.5 font-medium">
+                備註
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
+                rows={3}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
+              />
+            </div>
+          </div>
+
           <div className="px-5 pb-3">
             <div className="flex items-center gap-2 text-slate-300 text-sm font-semibold mb-0.5">
               <Footprints size={16} className="text-sky-400" /> 上場球員
             </div>
             <div className="text-slate-500 text-xs">
               {tournament
-                ? '僅列出此盃賽有出席的球員'
+                ? '僅列出此賽事有出席的球員'
                 : '勾選該場比賽有實際上場的球員'}
             </div>
           </div>
@@ -288,7 +355,7 @@ export function EditMatchModal({
           <div className="px-5 pb-4 space-y-2">
             {attendedIds != null && eligiblePlayers.length === 0 ? (
               <p className="text-slate-500 text-xs py-4 text-center">
-                此盃賽尚無出席球員，請到盃賽編輯器勾選出席球員。
+                此賽事尚無出席球員，請到賽事編輯器勾選出席球員。
               </p>
             ) : (
               eligiblePlayers.map((p) => {
@@ -365,19 +432,6 @@ export function EditMatchModal({
                 );
               })
             )}
-          </div>
-
-          <div className="px-5 pb-5 pt-1">
-            <label className="block text-slate-400 text-xs mb-1.5 font-medium">
-              備註
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="可填寫比賽相關備註，例如天氣、裁判、特殊事件等"
-              rows={3}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-3 text-white placeholder:text-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 resize-none"
-            />
           </div>
         </div>
 

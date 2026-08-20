@@ -1,8 +1,51 @@
+export type CompetitionType = 'cup' | 'league' | 'friendly';
+
+export const COMPETITION_TYPE_LABELS: Record<CompetitionType, string> = {
+  cup: '盃賽',
+  league: '季賽',
+  friendly: '友誼賽',
+};
+
+export const COMPETITION_TYPE_ICONS: Record<CompetitionType, string> = {
+  cup: 'Trophy',
+  league: 'CalendarRange',
+  friendly: 'Handshake',
+};
+
 export type Team = {
   id: string;
   name: string;
   slug: string;
+  home_kit_color: string;
+  away_kit_color: string;
 };
+
+export type KitChoice = 'home' | 'away';
+
+export type WeatherChoice = 'sunny' | 'cloudy' | 'rainy' | 'overcast';
+
+export const WEATHER_LABELS: Record<WeatherChoice, string> = {
+  sunny: '晴天',
+  cloudy: '陰天',
+  rainy: '雨天',
+  overcast: '陰雨',
+};
+
+export const KIT_LABELS: Record<KitChoice, string> = {
+  home: '主場',
+  away: '客場',
+};
+
+export const KIT_COLOR_PRESETS: string[] = [
+  '#1e40af',
+  '#ffffff',
+  '#dc2626',
+  '#f59e0b',
+  '#10b981',
+  '#6366f1',
+  '#ec4899',
+  '#0f172a',
+];
 
 export type PlayerMembership = {
   id: string;
@@ -24,6 +67,7 @@ export type Tournament = {
   id: string;
   name: string;
   team_id: string;
+  type: CompetitionType;
   start_date: string | null;
   end_date: string | null;
   location: string | null;
@@ -82,6 +126,8 @@ export type Match = {
   pk_our: number | null;
   pk_opp: number | null;
   notes: string;
+  kit: KitChoice | null;
+  weather: WeatherChoice | null;
   created_at?: string;
 };
 

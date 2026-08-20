@@ -16,6 +16,8 @@ type RawRow = {
   pk_our: number | null;
   pk_opp: number | null;
   notes: string;
+  kit: string | null;
+  weather: string | null;
   created_at?: string;
   match_performances: (MatchPerformance & { player: Player })[];
 };
@@ -38,7 +40,7 @@ export function useMatches(teamIds: string[]) {
     const { data, error } = await supabase
       .from('matches')
       .select(
-        'id, match_date, tournament, tournament_id, stage, location, opponent, our_score, opp_score, team_id, pk_our, pk_opp, notes, created_at, match_performances(id, match_id, player_id, attended, played, goals, assists, player:players(id, name, jersey_name, jersey_number))'
+        'id, match_date, tournament, tournament_id, stage, location, opponent, our_score, opp_score, team_id, pk_our, pk_opp, notes, kit, weather, created_at, match_performances(id, match_id, player_id, attended, played, goals, assists, player:players(id, name, jersey_name, jersey_number))'
       )
       .in('team_id', teamIds)
       .order('match_date', { ascending: false })
@@ -65,6 +67,8 @@ export function useMatches(teamIds: string[]) {
       pk_our: r.pk_our,
       pk_opp: r.pk_opp,
       notes: r.notes,
+      kit: r.kit as MatchWithPerformances['kit'],
+      weather: r.weather as MatchWithPerformances['weather'],
       created_at: r.created_at,
       performances: (r.match_performances ?? []).map((p) => ({
         id: p.id,

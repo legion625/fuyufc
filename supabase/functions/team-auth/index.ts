@@ -46,6 +46,7 @@ type Body = {
   notes?: string;
   performances?: Perf[];
   tournamentName?: string;
+  type?: string;
   startDate?: string;
   endDate?: string;
   location?: string;
@@ -95,7 +96,7 @@ Deno.serve(async (req: Request) => {
 
     // --- update match (NO password — open editing) ---
     if (body.action === "update-match") {
-      const { matchId, matchDate, opponent, ourScore, oppScore, pkOur, pkOpp, stage, notes, performances } = body;
+      const { matchId, matchDate, opponent, ourScore, oppScore, pkOur, pkOpp, stage, notes, kit, weather, performances } = body;
       if (!matchId) return json({ ok: false, error: "缺少 matchId" }, 400);
       const { data: match, error: mErr } = await supabase
         .from("matches").select("tournament_id").eq("id", matchId).maybeSingle();
@@ -113,6 +114,8 @@ Deno.serve(async (req: Request) => {
       if (pkOur !== undefined) update.pk_our = pkOur;
       if (pkOpp !== undefined) update.pk_opp = pkOpp;
       if (stage !== undefined) update.stage = stage;
+      if (kit !== undefined) update.kit = kit;
+      if (weather !== undefined) update.weather = weather;
       if (notes !== undefined) update.notes = notes;
 
       if (Object.keys(update).length > 0) {
@@ -138,13 +141,14 @@ Deno.serve(async (req: Request) => {
 
     // --- update tournament (NO password — open editing) ---
     if (body.action === "update-tournament") {
-      const { tournamentId, tournamentName, startDate, endDate, location, finalRank } = body;
+      const { tournamentId, tournamentName, type, startDate, endDate, location, finalRank } = body;
       if (!tournamentId) return json({ ok: false, error: "缺少 tournamentId" }, 400);
       const { data: t } = await supabase
         .from("tournaments").select("frozen").eq("id", tournamentId).maybeSingle();
       if (t?.frozen) return json({ ok: false, error: "盃賽已鎖定，無法編輯" }, 403);
       const update: Record<string, unknown> = {};
       if (tournamentName !== undefined) update.name = tournamentName;
+      if (type !== undefined) update.type = type;
       if (startDate !== undefined) update.start_date = startDate || null;
       if (endDate !== undefined) update.end_date = endDate || null;
       if (location !== undefined) update.location = location || null;

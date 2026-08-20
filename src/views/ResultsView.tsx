@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Trophy, Medal, Lock, Pencil, MapPin, Plus, ChevronDown } from 'lucide-react';
-import type { MatchWithPerformances, Tournament, Team } from '@/lib/types';
-import { getResult, rankLabel } from '@/lib/types';
+import { Loader2, Trophy, Medal, Lock, Pencil, MapPin, Plus, ChevronDown, Handshake, CalendarRange } from 'lucide-react';
+import type { MatchWithPerformances, Tournament, Team, CompetitionType } from '@/lib/types';
+import { getResult, rankLabel, COMPETITION_TYPE_LABELS } from '@/lib/types';
 
 const STAGE_SORT_PRIORITY: Record<number, number> = {
   2: 0,  // 決賽
@@ -37,6 +37,7 @@ export function ResultsView({
   onEdit,
   onEditTournament,
   onLogMatch,
+  onLogFriendly,
 }: {
   matches: MatchWithPerformances[];
   tournaments: Tournament[];
@@ -47,7 +48,16 @@ export function ResultsView({
   onEdit?: (m: MatchWithPerformances) => void;
   onEditTournament?: (t: Tournament) => void;
   onLogMatch?: (t: Tournament) => void;
+  onLogFriendly?: () => void;
 }) {
+  const friendlyBtn = onLogFriendly && (
+    <button
+      onClick={onLogFriendly}
+      className="w-full py-3.5 rounded-2xl border-2 border-dashed border-slate-700 text-slate-400 text-sm font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+    >
+      <Handshake size={18} /> 登錄友誼賽
+    </button>
+  );
   const teamMap = new Map(teams.map((t) => [t.id, t]));
 
   const groups = useMemo(() => {
@@ -134,17 +144,21 @@ export function ResultsView({
   }
   if (matches.length === 0 && tournaments.length === 0) {
     return (
-      <div className="text-center text-slate-500 text-sm py-20">
-        尚無賽果紀錄
-        <div className="mt-1 text-xs">到「盃賽」分頁新增盃賽後即可登錄比賽</div>
+      <div className="space-y-6">
+        {friendlyBtn}
+        <div className="text-center text-slate-500 text-sm py-12">
+          尚無賽果紀錄
+          <div className="mt-1 text-xs">到「賽事」分頁新增賽事，或直接登錄友誼賽</div>
+        </div>
       </div>
     );
   }
   if (matches.length === 0 && tournaments.length > 0) {
     return (
       <div className="space-y-6">
+        {friendlyBtn}
         <div className="text-center text-slate-500 text-sm py-6">
-          尚未登錄任何賽果，點擊下方盃賽的「登錄」按鈕開始
+          尚未登錄任何賽果，點擊賽事的「登錄」按鈕開始
         </div>
         {groups.map((g) => (
           <TournamentSection
@@ -164,6 +178,7 @@ export function ResultsView({
 
   return (
     <div className="space-y-6">
+      {friendlyBtn}
       {groups.map((g) => (
         <TournamentSection
           key={g.tournament?.id ?? 'unassigned'}
@@ -199,6 +214,8 @@ function TournamentSection({
 }) {
   const t = group.tournament;
   const [collapsed, setCollapsed] = useState(false);
+  const compType: CompetitionType = t?.type ?? 'friendly';
+  const TypeIcon = compType === 'cup' ? Trophy : compType === 'league' ? CalendarRange : Handshake;
   const dateRange =
     t?.start_date && t?.end_date && t.start_date !== t.end_date
       ? `${t.start_date.slice(5)} – ${t.end_date.slice(5)}`
@@ -213,9 +230,9 @@ function TournamentSection({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <Trophy size={18} className="text-amber-400 shrink-0" />
+                <TypeIcon size={18} className="text-amber-400 shrink-0" />
                 <h3 className="text-white font-bold text-base truncate">
-                  {t?.name ?? '未歸屬盃賽'}
+                  {t?.name ?? '友誼賽'}
                 </h3>
                 {teamName && (
                   <span className="text-sky-400 text-sm font-semibold shrink-0">
@@ -224,6 +241,11 @@ function TournamentSection({
                 )}
               </div>
               <div className="flex items-center gap-2 text-slate-400 text-xs flex-wrap mt-1.5">
+                {t && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-slate-700/40 text-slate-300 font-medium">
+                    {COMPETITION_TYPE_LABELS[compType]}
+                  </span>
+                )}
                 {dateRange && <span>{dateRange}</span>}
                 {dateRange && t?.location && <span>·</span>}
                 {t?.location && (
@@ -270,7 +292,7 @@ function TournamentSection({
                 <button
                   onClick={() => onEditTournament(t)}
                   className="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-200 active:scale-90 transition-transform px-2 py-1.5 rounded-lg hover:bg-slate-700/50"
-                  aria-label="編輯盃賽"
+                  aria-label="編輯賽事"
                 >
                   <Pencil size={16} />
                   <span className="text-[10px] font-medium leading-none">編輯</span>

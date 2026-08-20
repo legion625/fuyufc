@@ -44,6 +44,8 @@ export async function updateMatch(
     pkOur?: number | null;
     pkOpp?: number | null;
     stage?: number;
+    kit?: string | null;
+    weather?: string | null;
     notes?: string;
     performances?: Perf[];
   }
@@ -55,6 +57,7 @@ export async function updateTournament(
   tournamentId: string,
   fields: {
     tournamentName?: string;
+    type?: string;
     startDate?: string | null;
     endDate?: string | null;
     location?: string | null;
